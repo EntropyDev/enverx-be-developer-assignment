@@ -11,6 +11,17 @@ export const getAllPosts = async (request:express.Request, response:express.Resp
     let getAllCallback = (b: boolean) => {
         if(b)
         {
+            if(sort_by){
+                if(sort_by === 'date'){
+                    query = query.concat(` ORDER BY created_date asc`)
+                }else if(sort_by === 'name'){
+                    // console.log("sortt name")
+                    query = query.concat(` ORDER BY title asc`)
+                }else{
+                    console.error('invalid sort by type')
+                    // throw new Error("Invalid sort by type. Choose from (name, date)")
+                }
+            }
             console.log("Query : ",query)
                 let result: Array<object> = []
                 console.log("Getting all posts", query)
@@ -32,17 +43,6 @@ export const getAllPosts = async (request:express.Request, response:express.Resp
         await db.get(`SELECT * FROM categories WHERE category_id = ${filter_by}`,[],function(err: any, row: any){
             if(row){
                 query = query.concat(` where category_id=${filter_by}`)
-                if(sort_by){
-                    if(sort_by === 'date'){
-                        query = query.concat(` ORDER BY created_date asc`)
-                    }else if(sort_by === 'name'){
-                        // console.log("sortt name")
-                        query = query.concat(` ORDER BY title asc`)
-                    }else{
-                        console.error('invalid sort by type')
-                        // throw new Error("Invalid sort by type. Choose from (name, date)")
-                    }
-                }
                 getAllCallback(true)
             }else{
                 console.error('category not found !')
@@ -104,10 +104,10 @@ export const newPost = (request:express.Request, response:express.Response) => {
 export const updatePost = (request:express.Request, response:express.Response) => {
     let db = connectDB()
     let id = request.params.id
-    let callBack = (title: any, content: any) => {
+    let callBack = (title: any, content: any, category_id: any) => {
         let query = `UPDATE posts SET title=(?), content=(?)
                WHERE post_id  = (?)`;
-        db.get(query,[request.body.title || title, request.body.content || content, id], (err: any, row: object) => {
+        db.get(query,[request.body.title || title, request.body.content || content, request.body.category_id || category_id, id], (err: any, row: object) => {
             if(err){
                 console.error(err)
                 response.status(400).json({msg: "updatation failed"})
@@ -120,7 +120,7 @@ export const updatePost = (request:express.Request, response:express.Response) =
         if(err){
             console.error('Updating error')
         }
-        callBack(row.title,row.content)
+        callBack(row.title,row.content, row.category_id)
     })
 
     db.close()
